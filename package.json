@@ -1,0 +1,28 @@
+{
+  "name": "puppeteer-functions",
+  "version": "0.0.1",
+  "main": "index.js",
+  "author": "Eric Bidelman <ebidel@gmail.com>",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=8"
+  },
+  "scripts": {
+    "postinstall": "yarn install-function-deps",
+    "install-function-deps": "cd functions && yarn",
+    "prebuild": "rimraf functions-dist",
+    "build": "babel 'functions' --out-dir 'functions-dist' --presets=es2017 --copy-files --ignore 'node_modules'",
+    "postbuild": "cd functions-dist && yarn",
+    "prestart": "yarn build",
+    "start": "firebase serve --only hosting,functions",
+    "deploy": "yarn build && firebase deploy"
+  },
+  "dependencies": {
+    "firebase-tools": "^3.9.2"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.1",
+    "babel-preset-es2017": "^6.24.1",
+    "rimraf": "^2.6.1"
+  }
+}

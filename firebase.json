@@ -1,0 +1,21 @@
+{
+  "hosting": {
+    "public": "public",
+    "cleanUrls": true,
+    "rewrites": [{
+      "source": "/fetchPage",
+      "function": "fetchPage"
+    }, {
+      "source": "/getVersion",
+      "function": "getVersion"
+    }],
+    "ignore": [
+      "firebase.json",
+      "**/.md",
+      "**/node_modules/**"
+    ]
+  },
+  "functions": {
+    "source": "functions-dist"
+  }
+}
