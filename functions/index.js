@@ -3,9 +3,9 @@
 const functions = require('firebase-functions');
 const {Browser} = require('puppeteer');
 
-(async() => {
+// (async() => {
 
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+// const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
 exports.getVersion = functions.https.onRequest(async (req, res) => {
   const browser = new Browser();
@@ -41,23 +41,16 @@ exports.fetchPage = functions.https.onRequest(async (req, res) => {
     // browser.stderr.pipe(process.stderr);
     // browser.stdout.pipe(process.stdout);
 
-    const version = await browser.version();
-    console.log(version);
-
-    browser.close();
-
-    res.status(200).send(version);
-
-    // const page = await browser.newPage();
-    // const response = await page.goto('https://example.com', {waitUntil: 'networkidle'});
-    // const html = await response.text();
+    const page = await browser.newPage();
+    const response = await page.goto('https://example.com', {waitUntil: 'networkidle'});
+    const html = await response.text();
     // console.log(html);
 
-    // res.status(response.status).send(version);
+    res.status(response.status).send(html);
     // // await page.screenshot({path: 'example.png'});
 
     // // await page.close();
-    // browser.close();
+    browser.close();
   } catch(e) {
     res.status(500).send(e.toString());
   }
@@ -92,4 +85,4 @@ exports.fetchPage = functions.https.onRequest(async (req, res) => {
 //   });
 // });
 
-})();
+// })();

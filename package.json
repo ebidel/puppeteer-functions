@@ -8,11 +8,10 @@
     "node": ">=8"
   },
   "scripts": {
-    "postinstall": "yarn install-function-deps",
-    "install-function-deps": "cd functions && yarn",
-    "prebuild": "rimraf functions-dist",
+    "postinstall": "cd functions && yarn",
+    "clean": "rimraf functions-dist",
     "build": "babel 'functions' --out-dir 'functions-dist' --presets=es2017 --copy-files --ignore 'node_modules'",
-    "postbuild": "cd functions-dist && yarn",
+    "postbuild_DISABLE": "cd functions-dist && yarn",
     "prestart": "yarn build",
     "start": "firebase serve --only hosting,functions",
     "deploy": "yarn build && firebase deploy"
