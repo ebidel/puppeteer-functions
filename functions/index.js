@@ -1,88 +1,177 @@
-// const {URL} = (typeof self !== 'undefined' && self.URL) || require('whatwg-url');
-// const fetch = require('node-fetch');
+/* global document */
+
+const express = require('express');
 const functions = require('firebase-functions');
-const {Browser} = require('puppeteer');
+const mime = require('mime');
+const puppeteer = require('puppeteer');
 
-// (async() => {
+const app = express();
+app.use(function cors(req, res, next) {
+  res.header('Access-Control-Allow-Origin', '*');
+  // res.header('Content-Type', 'application/json;charset=utf-8');
+  // res.header('Cache-Control', 'private, max-age=300');
+  next();
+});
 
-// const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+// const beforeMB = process.memoryUsage().heapUsed / 1e6;
+// puppeteer.launch().then(browser => {
+//   app.locals.browser = browser;
+//   const afterMB = process.memoryUsage().heapUsed / 1e6;
+//   console.log('used', beforeMB - afterMB + 'MB');
+// })
 
-exports.getVersion = functions.https.onRequest(async (req, res) => {
-  const browser = new Browser();
+// Init code that gets run before all request handlers.
+app.all('*', async (req, res, next) => {
+  res.locals.browser = await puppeteer.launch();
+  next(); // pass control on to router.
+});
+
+app.get('/render', async function renderHandler(req, res) {
+  const url = req.query.url;
+  if (!url) {
+    return res.status(400).send(
+      'Please provide a URL. Example: ?url=https://example.com');
+  }
+
+  const browser = res.locals.browser;
+
+  try {
+    const page = await browser.newPage();
+    const response = await page.goto(url, {waitUntil: 'networkidle'});
+
+    // Inject <base> on page to relative resources load properly.
+    await page.evaluate(url => {
+      const base = document.createElement('base');
+      base.href = url;
+      document.head.prepend(base); // Add to top of head, before all other resources.
+    }, url);
+
+    // Remove scripts and html imports. They've already executed.
+    await page.evaluate(() => {
+      const elements = document.querySelectorAll('script, link[rel="import"]');
+      elements.forEach(e => e.remove());
+    });
+
+    const html = await page.content();
+
+    res.status(response.status).send(html);
+  } catch (e) {
+    res.status(500).send(e.toString());
+  }
+
+  // await page.close();
+  browser.close();
+});
+
+app.get('/screenshot', async function screenshotHandler(req, res) {
+  const url = req.query.url;
+  if (!url) {
+    return res.status(400).send(
+      'Please provide a URL. Example: ?url=https://example.com');
+  }
+
+  const viewport = {
+    width: 1280,
+    height: 1024,
+    deviceScaleFactor: 1
+  };
+
+  let fullPage = false;
+  const size = req.query.size;
+  if (size) {
+    const [width, height] = size.split(',').map(item => Number(item));
+    if (!(isFinite(width) && isFinite(height))) {
+      return res.status(400).send('Malformed size parameter. Example: ?size=800,600');
+    }
+    viewport.width = width;
+    viewport.height = height;
+  } else {
+    fullPage = true;
+  }
+
+  // res.writeHead(200, {
+  //   // 'Content-Type': 'text/event-stream',
+  //   'Cache-Control': 'no-cache',
+  //   'Connection': 'keep-alive',
+  //   'Access-Control-Allow-Origin': '*',
+  //   'X-Accel-Buffering': 'no' // Forces Flex App Engine to keep connection open for SSE.
+  // });
+  // res.write('Test');
+  // res.status(200).end();
+
+  const browser = res.locals.browser;
+
+  try {
+    const page = await browser.newPage();
+
+    // // TODO: client hints don't appear to work.
+    // await page.setExtraHTTPHeaders(new Map(Object.entries({
+    //   'Accept-CH': 'DPR, Viewport-Width, Width',
+    // })));
+
+    // page.on('request', req => {
+    //   console.log(req.headers.get('Accept-CH'));
+    // });
+    // page.on('response', res => {
+    //   const type = res.headers.get('Content-Type');
+    //   if (type && type.startsWith('image') || type.includes('text/css')) {
+    //     console.log(res.headers)
+    //   }
+    // });
+
+    // const devices = require('puppeteer/DeviceDescriptors');
+    // const iPhone = devices['iPhone 6'];
+    // await page.emulate(iPhone);
+
+    // const metrics = await page._client.send('Page.getLayoutMetrics');
+    // const width = Math.ceil(metrics.contentSize.width);
+    // const height = Math.ceil(metrics.contentSize.height);
+
+    // await page.setViewport({width, height});
+
+    // await page.setViewport(viewport);
+
+    // // Fetch viewport of page.
+    // const viewport = await page.evaluate(() => {
+    //   return {
+    //     width: document.documentElement.clientWidth,
+    //     height: document.documentElement.clientHeight,
+    //     deviceScaleFactor: window.devicePixelRatio
+    //   };
+    // });
+
+    await page.goto(url, {waitUntil: 'networkidle'});
+
+    const opts = {
+      fullPage,
+      clip: {
+        x: 0,
+        y: 0,
+        width: viewport.width,
+        height: viewport.height
+      },
+      // omitBackground: true
+    };
+    if (fullPage) {
+      delete opts.clip;
+    }
+
+    const buffer = await page.screenshot(opts);
+    const mimeType = mime.lookup('screenshot.png');
+    res.type(mimeType).send(buffer);
+  } catch (e) {
+    res.status(500).send(e.toString());
+  }
+
+  browser.close();
+});
+
+app.get('/version', async function versionHandler(req, res) {
+  const browser = res.locals.browser;
   res.status(200).send(await browser.version());
   browser.close();
 });
 
-exports.fetchPage = functions.https.onRequest(async (req, res) => {
-  let executablePath = req.query.browser || null;
-  switch (executablePath) {
-    case 'canary':
-      executablePath = '/Applications/Google\ Chrome\ Canary.app/Contents/MacOS/Google\ Chrome\ Canary';
-      break;
-    case 'chromium':
-      executablePath = '/Applications/Chromium.app/Contents/MacOS/Chromium';
-      break;
-    default:
-      // noop
-  }
-
-  const opts = {
-    // headless: false,
-    // ignoreHTTPSErrors: true,
-    // args: ['--no-sandbox', '--enable-logging', '--enable-sandbox-logging', '--crash-dumps-dir=~./crashes']
-    // args: ['--remote-debugging-port=9229']
-  };
-  if (executablePath) {
-    opts.executablePath = executablePath;
-  }
-
-  try {
-    const browser = new Browser(opts);
-    // browser.stderr.pipe(process.stderr);
-    // browser.stdout.pipe(process.stdout);
-
-    const page = await browser.newPage();
-    const response = await page.goto('https://example.com', {waitUntil: 'networkidle'});
-    const html = await response.text();
-    // console.log(html);
-
-    res.status(response.status).send(html);
-    // // await page.screenshot({path: 'example.png'});
-
-    // // await page.close();
-    browser.close();
-  } catch(e) {
-    res.status(500).send(e.toString());
-  }
-
-  // res.set('Content-Type', 'application/json;charset=utf-8');
-  // res.set('Cache-Control', 'private, max-age=300');
-  // res.set('Access-Control-Allow-Origin', '*');
-  // res.status(200).send('hi');
-});
-
-// ============================== USE LIGHTHOUSE ===============================
-// const lighthouse = require('lighthouse');
-// const chromeLauncher = require('lighthouse/chrome-launcher');
-// const log = require('lighthouse-logger');
-
-// const LH_FLAGS = {logLevel: 'info', output: 'json'};
-// log.setLevel(LH_FLAGS.logLevel);
-
-// async function launchChromeAndRunLighthouse(url, flags = {}, config = null) {
-//   const chrome = await chromeLauncher.launch({
-//     chromeFlags: ['--headless']
-//   });
-//   flags.port = chrome.port;
-//   const results = await lighthouse(url, flags, config);
-//   await chrome.kill();
-//   return results;
-// }
-
-// exports.fetchPage = functions.https.onRequest(async (req, res) => {
-//   launchChromeAndRunLighthouse('https://example.com', LH_FLAGS).then(results => {
-//     res.status(200).json(results);
-//   });
-// });
-
-// })();
+exports.screenshot = functions.https.onRequest(app);
+exports.render = functions.https.onRequest(app);
+exports.version = functions.https.onRequest(app);

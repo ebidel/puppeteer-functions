@@ -3,11 +3,14 @@
     "public": "public",
     "cleanUrls": true,
     "rewrites": [{
-      "source": "/fetchPage",
-      "function": "fetchPage"
+      "source": "/render",
+      "function": "render"
     }, {
-      "source": "/getVersion",
-      "function": "getVersion"
+      "source": "/version",
+      "function": "version"
+    }, {
+      "source": "/screenshot",
+      "function": "screenshot"
     }],
     "ignore": [
       "firebase.json",
