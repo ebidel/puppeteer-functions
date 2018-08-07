@@ -20,7 +20,7 @@ module.exports = {
       "SwitchCase": 1,
       "VariableDeclarator": 2,
       "MemberExpression": 1,
-      "outerIIFEBody": 0
+      // "outerIIFEBody": 0
     }],
     "max-len": [2, 100, {
       "ignoreComments": true,

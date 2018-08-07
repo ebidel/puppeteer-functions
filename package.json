@@ -7,28 +7,28 @@
   "author": "Eric Bidelman <ebidel@gmail.com>",
   "license": "Apache-2.0",
   "engines": {
-    "node": ">=7.10.0"
+    "node": ">=8"
   },
   "scripts": {
-    "postinstall": "cd functions && yarn",
+    "postinstall": "yarn install-functions",
+    "install-functions": "cd functions && yarn",
     "cleanup": "rimraf functions-dist",
-    "build": "babel 'functions' --out-dir 'functions-dist' --presets=es2017 --copy-files --ignore 'node_modules'",
-    "build-fast": "cp functions/index.js ./functions-dist",
-    "postbuild_SDF": "cd functions-dist && yarn",
-    "postbuild": "rimraf ./functions-dist/node_modules && cp -R ./functions/node_modules ./functions-dist",
+    "buildnode6": "babel 'functions' --out-dir 'functions-dist' --presets=es2017 --copy-files --ignore 'node_modules'",
+    "postbuildnode6": "rimraf ./functions-dist/node_modules && cp -R ./functions/node_modules ./functions-dist",
+    "build": "cp functions/index.js ./functions-dist",
     "start": "firebase serve --only hosting,functions",
     "deploy": "yarn lint && yarn build && firebase deploy",
     "lint": "([ \"$CI\" = true ] && eslint --quiet -f codeframe . || eslint .)"
   },
   "dependencies": {
-    "firebase-tools": "^3.9.2"
+    "firebase-tools": "^4.0.3"
   },
   "devDependencies": {
     "@google-cloud/functions-emulator": "^1.0.0-alpha.25",
     "babel-cli": "^6.26.0",
     "babel-preset-es2017": "^6.24.1",
-    "eslint": "^4.5.0",
+    "eslint": "^5.3.0",
     "eslint-config-google": "^0.9.1",
-    "rimraf": "^2.6.1"
+    "rimraf": "^2.6.2"
   }
 }

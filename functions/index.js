@@ -2,7 +2,7 @@
 
 const express = require('express');
 const functions = require('firebase-functions');
-const mime = require('mime');
+// const mime = require('mime');
 const puppeteer = require('puppeteer');
 
 const app = express();
@@ -22,7 +22,7 @@ app.use(function cors(req, res, next) {
 
 // Init code that gets run before all request handlers.
 app.all('*', async (req, res, next) => {
-  res.locals.browser = await puppeteer.launch();
+  res.locals.browser = await puppeteer.launch({args: ['--no-sandbox']});
   next(); // pass control on to router.
 });
 
@@ -37,7 +37,7 @@ app.get('/render', async function renderHandler(req, res) {
 
   try {
     const page = await browser.newPage();
-    const response = await page.goto(url, {waitUntil: 'networkidle'});
+    const response = await page.goto(url, {waitUntil: 'networkidle2'});
 
     // Inject <base> on page to relative resources load properly.
     await page.evaluate(url => {
@@ -53,14 +53,14 @@ app.get('/render', async function renderHandler(req, res) {
     });
 
     const html = await page.content();
+    // await page.close();
 
     res.status(response.status).send(html);
   } catch (e) {
     res.status(500).send(e.toString());
   }
 
-  // await page.close();
-  browser.close();
+  await browser.close();
 });
 
 app.get('/screenshot', async function screenshotHandler(req, res) {
@@ -140,7 +140,7 @@ app.get('/screenshot', async function screenshotHandler(req, res) {
     //   };
     // });
 
-    await page.goto(url, {waitUntil: 'networkidle'});
+    await page.goto(url, {waitUntil: 'networkidle2'});
 
     const opts = {
       fullPage,
@@ -157,21 +157,37 @@ app.get('/screenshot', async function screenshotHandler(req, res) {
     }
 
     const buffer = await page.screenshot(opts);
-    const mimeType = mime.lookup('screenshot.png');
-    res.type(mimeType).send(buffer);
+    // const mimeType = mime.lookup('screenshot.png');
+    // await page.close();
+
+    res.type('image/png').send(buffer);
   } catch (e) {
     res.status(500).send(e.toString());
   }
 
-  browser.close();
+  await browser.close();
 });
 
 app.get('/version', async function versionHandler(req, res) {
   const browser = res.locals.browser;
   res.status(200).send(await browser.version());
-  browser.close();
+  await browser.close();
 });
 
 exports.screenshot = functions.https.onRequest(app);
 exports.render = functions.https.onRequest(app);
 exports.version = functions.https.onRequest(app);
+// exports.test = functions.https.onRequest(async (req, res) => {
+//   const {exec} = require('child_process');
+//   const os = require('os');
+
+//   exec('uname -a', (error, stdout, stderr) => {
+//     if (error) {
+//       console.error(`exec error: ${error}`);
+//     }
+//     const str = stdout;
+//     res.status(200).send(str + '\n' + `${process.platform}, ${String(os.release())}, ${os.arch()}`);
+//   });
+
+//   // res.status(200).send(`${process.platform}, ${String(os.release())}, ${os.arch()}`);
+// });

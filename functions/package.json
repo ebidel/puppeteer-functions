@@ -1,12 +1,14 @@
 {
   "name": "puppeteer-firebase",
   "description": "Useful Puppeteer Firebase Cloud Functions",
+  "engines": {
+    "node": "8"
+  },
   "dependencies": {
-    "express": "^4.15.4",
-    "firebase-admin": "^5.2.1",
-    "firebase-functions": "^0.6.2",
-    "lighthouse": "^2.4.0",
-    "puppeteer": "^0.10.0"
+    "express": "^4.16.3",
+    "firebase-admin": "^5.13.1",
+    "firebase-functions": "^2.0.2",
+    "puppeteer": "^1.6.2"
   },
   "private": true
 }
