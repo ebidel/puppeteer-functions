@@ -20,6 +20,10 @@ app.use(function cors(req, res, next) {
 //   console.log('used', beforeMB - afterMB + 'MB');
 // })
 
+app.get('/test', (req, res) => {
+  res.status(200).send('test');
+});
+
 // Init code that gets run before all request handlers.
 app.all('*', async (req, res, next) => {
   res.locals.browser = await puppeteer.launch({args: ['--no-sandbox']});
@@ -178,6 +182,7 @@ const beefyOpts = {memory: '2GB', timeoutSeconds: 60};
 exports.screenshot = functions.runWith(beefyOpts).https.onRequest(app);
 exports.render = functions.runWith(beefyOpts).https.onRequest(app);
 exports.version = functions.https.onRequest(app);
+exports.test = functions.https.onRequest(app);
 
 // exports.test = functions.https.onRequest(async (req, res) => {
 //   const {exec} = require('child_process');

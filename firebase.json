@@ -11,6 +11,9 @@
     }, {
       "source": "/screenshot",
       "function": "screenshot"
+    }, {
+      "source": "/test",
+      "function": "test"
     }],
     "ignore": [
       "firebase.json",
