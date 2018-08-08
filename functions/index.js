@@ -174,9 +174,11 @@ app.get('/version', async function versionHandler(req, res) {
   await browser.close();
 });
 
-exports.screenshot = functions.https.onRequest(app);
-exports.render = functions.https.onRequest(app);
+const beefyOpts = {memory: '2GB', timeoutSeconds: 60};
+exports.screenshot = functions.runWith(beefyOpts).https.onRequest(app);
+exports.render = functions.runWith(beefyOpts).https.onRequest(app);
 exports.version = functions.https.onRequest(app);
+
 // exports.test = functions.https.onRequest(async (req, res) => {
 //   const {exec} = require('child_process');
 //   const os = require('os');
